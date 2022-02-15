@@ -1,5 +1,7 @@
+import argparse
 import os
 from collections import namedtuple
+from pprint import pprint
 
 import tbapy
 import pandas as pd
@@ -9,7 +11,7 @@ from numpy.linalg import linalg
 CalcContribMetric = namedtuple("CalcContribMetric", ["cc_name", "cc_func"])
 
 # 2019 Events
-EVENT = "2019flwp"  # South Florida Regional
+# EVENT = "2019flwp"  # South Florida Regional
 # EVENT = "2019orwil"  # Wilsonville PNW
 
 # 2020 Events
@@ -19,8 +21,7 @@ EVENT = "2019flwp"  # South Florida Regional
 # EVENT = "2022orore"  # Clackamas Academy PNW
 # EVENT = "2022flwp"  # South Florida Regional
 
-HOME_TEAM = 6343
-MATCH = None
+# HOME_TEAM = 6343
 
 
 def cc_metric_my_opr(*, match_data, alliance):
@@ -170,10 +171,41 @@ def process_and_print_header(event_info, teams, matches):
     )
 
 
-def print_df(df):
+def find_match_alliances(matches, match_number):
+    result = [], []
+    if match_number:
+        for match in matches:
+            if match["comp_level"] == "qm" and match["match_number"] == match_number:
+                red = [int(i[3:]) for i in match["alliances"]["red"]["team_keys"]]
+                blue = [int(i[3:]) for i in match["alliances"]["blue"]["team_keys"]]
+                result = (red, blue)
+                break
+    return result
+
+
+def mark_index(index, team, red, blue):
+    """Mark the given index for a specific team number or alliance color"""
+    result = "*" if team and index == team else " "
+    if index in red:
+        result += f"R {index:4}"
+    elif index in blue:
+        result += f"B {index:4}"
+    else:
+        result += f"  {index:4}"
+    return result
+
+
+def print_df(df, season, team, matches, match_number):
     """Print out the dataframe"""
-    for sort_by in SORT_BY_COLUMNS[EVENT[:4]]:
-        # Sort the data and print the master data frame
+    red_alliance, blue_alliance = find_match_alliances(matches, match_number)
+    saved_index = list(df.index)
+    df.set_index(
+        pd.Index(
+            [mark_index(i, team=team, red=red_alliance, blue=blue_alliance) for i in df.index]
+        ),
+        inplace=True,
+    )
+    for sort_by in SORT_BY_COLUMNS[season]:
         df.sort_values(by=[sort_by], inplace=True, ascending=False)
         with pd.option_context(
             "display.max_rows",
@@ -183,25 +215,27 @@ def print_df(df):
             "display.float_format",
             "{:.2f}".format,
         ):
-            # Prefix a '*' in front of the home team
-            df.set_index(
-                pd.Index(
-                    [f"* {i:4}" if i == HOME_TEAM else f"{i:6}" for i in df.index]
-                ),
-                inplace=True,
-            )
-            print(f"Sorted by {sort_by}")
+
+            print(f"Sorted by {sort_by} & Marked for Match {match_number}")
             print(df)
             print()
+    df.set_index(pd.Index(saved_index))
 
 
 def main():
 
+    parser = argparse.ArgumentParser(description="Blue Alliance Event Analysis")
+    parser.add_argument("event", help="ID string for an FRC event (i.e. '2022orore')")
+    parser.add_argument("-t", "--team", type=int, help="Team number to mark (i.e. home team)")
+    parser.add_argument("-m", "--match", type=int, help="Match number used to mark alliances")
+    args = parser.parse_args()
+
     # Create a TBA connection using my API key
     tba = tbapy.TBA(os.environ.get("TBA_READ_KEY"))
-    event_info = tba.event(EVENT)
-    teams = [int(i["key"][3:]) for i in tba.event_teams(EVENT, simple=True)]
-    matches = tba.event_matches(EVENT)
+    event_info = tba.event(args.event)
+    teams = [int(i["key"][3:]) for i in tba.event_teams(args.event, simple=True)]
+    matches = tba.event_matches(args.event)
+    # pprint(matches)
 
     # Print the header
     process_and_print_header(event_info, teams, matches)
@@ -214,7 +248,7 @@ def main():
 
     # Concatenate the Blue Alliance rankings data
     try:
-        rankings = tba.event_rankings(EVENT)
+        rankings = tba.event_rankings(args.event)
     except TypeError:
         pass
     else:
@@ -222,18 +256,18 @@ def main():
 
     # Concatenate the Blue Alliance OPR data
     try:
-        oprs = tba.event_oprs(EVENT)
+        oprs = tba.event_oprs(args.event)
     except TypeError:
         pass
     else:
         df = pd.concat([df, get_opr_df(oprs, teams)], axis=1)
 
     # Concatenate the calculated contribution results
-    my_opr_df = get_cc_metrics_df(matches, EVENT, teams)
+    my_opr_df = get_cc_metrics_df(matches, args.event, teams)
     df = pd.concat([df, my_opr_df], axis=1)
 
     # Display the results
-    print_df(df)
+    print_df(df, args.event[:4], args.team, matches, args.match)
 
 
 if __name__ == "__main__":
