@@ -5,13 +5,20 @@ import tbapy
 import pandas as pd
 import numpy as np
 from numpy.linalg import linalg
-from pprint import pprint
 
 CalcContribMetric = namedtuple("CalcContribMetric", ["cc_name", "cc_func"])
 
-#EVENT = "2019orwil"
-EVENT = "2020orore"
-#EVENT = "2022orore"
+# 2019 Events
+EVENT = "2019flwp"  # South Florida Regional
+# EVENT = "2019orwil"  # Wilsonville PNW
+
+# 2020 Events
+# EVENT = "2020orore"  # Clackamas Academy PNW
+
+# 2022 Events
+# EVENT = "2022orore"  # Clackamas Academy PNW
+# EVENT = "2022flwp"  # South Florida Regional
+
 HOME_TEAM = 6343
 MATCH = None
 
@@ -38,23 +45,23 @@ CC_METRICS = {
     "2022": [
         CalcContribMetric("FOUL", cc_metric_fouls),
         CalcContribMetric("MY_OPR", cc_metric_my_opr),
-        ],
+    ],
     "2020": [
         CalcContribMetric("PC", cc_metric_2020_power_cell),
         CalcContribMetric("FOUL", cc_metric_fouls),
         CalcContribMetric("MY_OPR", cc_metric_my_opr),
-        ],
+    ],
     "2019": [
         CalcContribMetric("FOUL", cc_metric_fouls),
         CalcContribMetric("MY_OPR", cc_metric_my_opr),
-        ],
-    }
+    ],
+}
 
 SORT_BY_COLUMNS = {
     "2022": ["FOUL", "MY_OPR"],
     "2020": ["PC", "FOUL", "MY_OPR"],
     "2019": ["FOUL", "MY_OPR"],
-    }
+}
 
 
 def get_opr_df(oprs_raw, teams):
@@ -126,16 +133,41 @@ def get_cc_metrics_df(matches, event_id, teams):
     season = event_id[:4]
     cc_df = pd.DataFrame(index=teams)
     for metric, _ in CC_METRICS[season]:
-        cc_df[metric] = get_cc_metric(season=season, teams=teams, matches=matches, metric_name=metric)
+        cc_df[metric] = get_cc_metric(
+            season=season, teams=teams, matches=matches, metric_name=metric
+        )
     return cc_df.sort_index()
 
 
-def print_header(event_name, year, start_date, n_completed, n_total):
+def print_header(event_name, year, start_date, n_completed, n_total, n_teams):
     print(f"Event Name: {event_name}")
     print(f"Year: {year}")
     print(f"Start Date: {start_date}")
-    print(f"Completed {n_completed} of {n_total} qualification matches")
+    print(f"Number of Team Competing: {n_teams}")
+    print(f"Completed {n_completed} of {n_total} Qualification Matches")
     print()
+
+
+def process_and_print_header(event_info, teams, matches):
+    all_post_result_times = [
+        i
+        for _, i in sorted(
+            [
+                (i["match_number"], i["post_result_time"])
+                for i in matches
+                if i["comp_level"] == "qm"
+            ]
+        )
+    ]
+    completed_post_result_times = [i for i in all_post_result_times if i]
+    print_header(
+        event_info["name"],
+        event_info["year"],
+        event_info["start_date"],
+        len(completed_post_result_times),
+        len(all_post_result_times),
+        len(teams),
+    )
 
 
 def print_df(df):
@@ -144,16 +176,18 @@ def print_df(df):
         # Sort the data and print the master data frame
         df.sort_values(by=[sort_by], inplace=True, ascending=False)
         with pd.option_context(
-                "display.max_rows",
-                None,
-                "display.max_columns",
-                None,
-                "display.float_format",
-                '{:.2f}'.format,
+            "display.max_rows",
+            None,
+            "display.max_columns",
+            None,
+            "display.float_format",
+            "{:.2f}".format,
         ):
             # Prefix a '*' in front of the home team
             df.set_index(
-                pd.Index([f"* {i:4}" if i == HOME_TEAM else f"{i:6}" for i in df.index]),
+                pd.Index(
+                    [f"* {i:4}" if i == HOME_TEAM else f"{i:6}" for i in df.index]
+                ),
                 inplace=True,
             )
             print(f"Sorted by {sort_by}")
@@ -170,21 +204,29 @@ def main():
     matches = tba.event_matches(EVENT)
 
     # Print the header
-    all_post_result_times = [i for _, i in sorted([(i["match_number"], i["post_result_time"]) for i in matches if i["comp_level"] == "qm"])]
-    completed_post_result_times = [i for i in all_post_result_times if i]
-    print_header(event_info["name"], event_info["year"], event_info["start_date"], len(completed_post_result_times), len(all_post_result_times))
-
-    try:
-        rankings = tba.event_rankings(EVENT)
-        oprs = tba.event_oprs(EVENT)
-    except TypeError:
-        return None
+    process_and_print_header(event_info, teams, matches)
+    # all_post_result_times = [i for _, i in sorted([(i["match_number"], i["post_result_time"]) for i in matches if i["comp_level"] == "qm"])]
+    # completed_post_result_times = [i for i in all_post_result_times if i]
+    # print_header(event_info["name"], event_info["year"], event_info["start_date"], len(completed_post_result_times), len(all_post_result_times), len(teams))
 
     # Use pandas to organize team data
     df = pd.DataFrame(index=teams)
 
-    # Concatenate the Blue Alliance OPR and rankings data
-    df = pd.concat([df, get_opr_df(oprs, teams), get_rankings_df(rankings, teams)], axis=1)
+    # Concatenate the Blue Alliance rankings data
+    try:
+        rankings = tba.event_rankings(EVENT)
+    except TypeError:
+        pass
+    else:
+        df = pd.concat([df, get_rankings_df(rankings, teams)], axis=1)
+
+    # Concatenate the Blue Alliance OPR data
+    try:
+        oprs = tba.event_oprs(EVENT)
+    except TypeError:
+        pass
+    else:
+        df = pd.concat([df, get_opr_df(oprs, teams)], axis=1)
 
     # Concatenate the calculated contribution results
     my_opr_df = get_cc_metrics_df(matches, EVENT, teams)
