@@ -57,21 +57,13 @@ SORT_BY_COLUMNS = {
     }
 
 
-def get_opr_df(tba, event_id, teams):
-    try:
-        oprs_raw = tba.event_oprs(event_id)
-    except TypeError:
-        return None
+def get_opr_df(oprs_raw, teams):
     opr_df = pd.DataFrame(index=teams)
     opr_df["BA_OPR"] = [opr for _, opr in sorted(list(oprs_raw["oprs"].items()))]
     return opr_df.sort_index()
 
 
-def get_rankings_df(tba, event_id, teams):
-    try:
-        rankings_raw = tba.event_rankings(event_id)
-    except TypeError:
-        return None
+def get_rankings_df(rankings_raw, teams):
     ranking_df = pd.DataFrame(index=teams)
     ranking_df["W"] = [i["record"]["wins"] for i in rankings_raw["rankings"]]
     ranking_df["L"] = [i["record"]["losses"] for i in rankings_raw["rankings"]]
@@ -80,6 +72,10 @@ def get_rankings_df(tba, event_id, teams):
     ranking_df["Rnk"] = [i["rank"] for i in rankings_raw["rankings"]]
     ranking_df["DQ"] = [i["dq"] for i in rankings_raw["rankings"]]
     return ranking_df.sort_index()
+
+
+def is_completed(match):
+    return match["post_result_time"] is not None and match["post_result_time"] > 0
 
 
 def get_match_cc_metrics(season, match_data, color):
@@ -98,7 +94,7 @@ def get_cc_metric(*, season, teams, matches, metric_name):
     for match in matches:
 
         # Only consider qualification matches
-        if match["comp_level"] == "qm":
+        if is_completed(match) and match["comp_level"] == "qm":
 
             # For each alliance in each match
             for color in ["red", "blue"]:
@@ -125,14 +121,21 @@ def get_cc_metric(*, season, teams, matches, metric_name):
         return linalg.solve(m_norm, s_norm)
 
 
-def get_cc_metrics_df(tba, event_id, teams):
+def get_cc_metrics_df(matches, event_id, teams):
     """Create a dataframe for the calculated contribution metrics"""
     season = event_id[:4]
     cc_df = pd.DataFrame(index=teams)
-    matches = tba.event_matches(EVENT)
     for metric, _ in CC_METRICS[season]:
         cc_df[metric] = get_cc_metric(season=season, teams=teams, matches=matches, metric_name=metric)
     return cc_df.sort_index()
+
+
+def print_header(event_name, year, start_date, n_completed, n_total):
+    print(f"Event Name: {event_name}")
+    print(f"Year: {year}")
+    print(f"Start Date: {start_date}")
+    print(f"Completed {n_completed} of {n_total} qualification matches")
+    print()
 
 
 def print_df(df):
@@ -162,16 +165,29 @@ def main():
 
     # Create a TBA connection using my API key
     tba = tbapy.TBA(os.environ.get("TBA_READ_KEY"))
+    event_info = tba.event(EVENT)
     teams = [int(i["key"][3:]) for i in tba.event_teams(EVENT, simple=True)]
+    matches = tba.event_matches(EVENT)
+
+    # Print the header
+    all_post_result_times = [i for _, i in sorted([(i["match_number"], i["post_result_time"]) for i in matches if i["comp_level"] == "qm"])]
+    completed_post_result_times = [i for i in all_post_result_times if i]
+    print_header(event_info["name"], event_info["year"], event_info["start_date"], len(completed_post_result_times), len(all_post_result_times))
+
+    try:
+        rankings = tba.event_rankings(EVENT)
+        oprs = tba.event_oprs(EVENT)
+    except TypeError:
+        return None
 
     # Use pandas to organize team data
     df = pd.DataFrame(index=teams)
 
     # Concatenate the Blue Alliance OPR and rankings data
-    df = pd.concat([df, get_opr_df(tba, EVENT, teams), get_rankings_df(tba, EVENT, teams)], axis=1)
+    df = pd.concat([df, get_opr_df(oprs, teams), get_rankings_df(rankings, teams)], axis=1)
 
     # Concatenate the calculated contribution results
-    my_opr_df = get_cc_metrics_df(tba, EVENT, teams)
+    my_opr_df = get_cc_metrics_df(matches, EVENT, teams)
     df = pd.concat([df, my_opr_df], axis=1)
 
     # Display the results
