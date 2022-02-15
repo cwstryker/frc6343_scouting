@@ -135,20 +135,8 @@ def get_cc_metrics_df(tba, event_id, teams):
     return cc_df.sort_index()
 
 
-def main():
-
-    # Create a TBA connection using my API key
-    tba = tbapy.TBA(os.environ.get("TBA_READ_KEY"))
-    teams = [int(i["key"][3:]) for i in tba.event_teams(EVENT, simple=True)]
-    df = pd.DataFrame(index=teams)
-
-    # Use pandas to organize team data
-    df = pd.concat([df, get_opr_df(tba, EVENT, teams), get_rankings_df(tba, EVENT, teams)], axis=1)
-
-    # Concatenate the calculated contribution to the master data frame
-    my_opr_df = get_cc_metrics_df(tba, EVENT, teams)
-    df = pd.concat([df, my_opr_df], axis=1)
-
+def print_df(df):
+    """Print out the dataframe"""
     for sort_by in SORT_BY_COLUMNS[EVENT[:4]]:
         # Sort the data and print the master data frame
         df.sort_values(by=[sort_by], inplace=True, ascending=False)
@@ -168,6 +156,26 @@ def main():
             print(f"Sorted by {sort_by}")
             print(df)
             print()
+
+
+def main():
+
+    # Create a TBA connection using my API key
+    tba = tbapy.TBA(os.environ.get("TBA_READ_KEY"))
+    teams = [int(i["key"][3:]) for i in tba.event_teams(EVENT, simple=True)]
+
+    # Use pandas to organize team data
+    df = pd.DataFrame(index=teams)
+
+    # Concatenate the Blue Alliance OPR and rankings data
+    df = pd.concat([df, get_opr_df(tba, EVENT, teams), get_rankings_df(tba, EVENT, teams)], axis=1)
+
+    # Concatenate the calculated contribution results
+    my_opr_df = get_cc_metrics_df(tba, EVENT, teams)
+    df = pd.concat([df, my_opr_df], axis=1)
+
+    # Display the results
+    print_df(df)
 
 
 if __name__ == "__main__":
