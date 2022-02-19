@@ -1,3 +1,5 @@
+from . import __VERSION__
+
 import argparse
 import os
 from collections import namedtuple
@@ -10,6 +12,7 @@ from numpy.linalg import linalg
 
 CalcContribMetric = namedtuple("CalcContribMetric", ["cc_name", "cc_func"])
 
+
 # 2019 Events
 # EVENT = "2019flwp"  # South Florida Regional
 # EVENT = "2019orwil"  # Wilsonville PNW
@@ -20,8 +23,6 @@ CalcContribMetric = namedtuple("CalcContribMetric", ["cc_name", "cc_func"])
 # 2022 Events
 # EVENT = "2022orore"  # Clackamas Academy PNW
 # EVENT = "2022flwp"  # South Florida Regional
-
-# HOME_TEAM = 6343
 
 
 def cc_metric_my_opr(*, match_data, alliance):
@@ -201,7 +202,10 @@ def print_df(df, season, team, matches, match_number):
     saved_index = list(df.index)
     df.set_index(
         pd.Index(
-            [mark_index(i, team=team, red=red_alliance, blue=blue_alliance) for i in df.index]
+            [
+                mark_index(i, team=team, red=red_alliance, blue=blue_alliance)
+                for i in df.index
+            ]
         ),
         inplace=True,
     )
@@ -224,10 +228,19 @@ def print_df(df, season, team, matches, match_number):
 
 def main():
 
-    parser = argparse.ArgumentParser(description="Blue Alliance Event Analysis")
+    parser = argparse.ArgumentParser(
+        description="Blue Alliance Event Analysis", prog="TBA Tool"
+    )
     parser.add_argument("event", help="ID string for an FRC event (i.e. '2022orore')")
-    parser.add_argument("-t", "--team", type=int, help="Team number to mark (i.e. home team)")
-    parser.add_argument("-m", "--match", type=int, help="Match number used to mark alliances")
+    parser.add_argument(
+        "-t", "--team", type=int, help="Team number to mark (i.e. home team)"
+    )
+    parser.add_argument(
+        "-m", "--match", type=int, help="Match number used to mark alliances"
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__VERSION__}"
+    )
     args = parser.parse_args()
 
     # Create a TBA connection using my API key
@@ -237,11 +250,8 @@ def main():
     matches = tba.event_matches(args.event)
     # pprint(matches)
 
-    # Print the header
+    # Display the header
     process_and_print_header(event_info, teams, matches)
-    # all_post_result_times = [i for _, i in sorted([(i["match_number"], i["post_result_time"]) for i in matches if i["comp_level"] == "qm"])]
-    # completed_post_result_times = [i for i in all_post_result_times if i]
-    # print_header(event_info["name"], event_info["year"], event_info["start_date"], len(completed_post_result_times), len(all_post_result_times), len(teams))
 
     # Use pandas to organize team data
     df = pd.DataFrame(index=teams)
