@@ -161,8 +161,8 @@ def print_df(df, season, team, matches, match_number):
         ),
         inplace=True,
     )
-    for sort_by in SORT_BY_COLUMNS[season]:
-        df.sort_values(by=[sort_by], inplace=True, ascending=False)
+    for sort_by, ascending in SORT_BY_COLUMNS[season]:
+        df.sort_values(by=[sort_by], inplace=True, ascending=ascending)
         with pd.option_context(
             "display.max_rows",
             None,

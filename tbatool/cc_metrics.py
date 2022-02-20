@@ -25,7 +25,7 @@ def cc_metric_my_opr(*, match_data, alliance):
 def cc_metric_fouls(*, match_data, alliance):
     """Find the total score earned during the match"""
     alliance = "red" if alliance == "blue" else "blue"
-    return -1 * int(match_data["score_breakdown"][alliance]["foulPoints"])
+    return int(match_data["score_breakdown"][alliance]["foulPoints"])
 
 
 def cc_metric_2020_power_cell(*, match_data, alliance):
@@ -45,7 +45,6 @@ def cc_metric_2022_hang(*, match_data, alliance):
     return int(match_data["score_breakdown"][alliance]["endgamePoints"])
 
 
-
 CC_METRICS = {
     "2022": [
         CalcContribMetric("CARGO", cc_metric_2022_cargo),
@@ -60,10 +59,4 @@ CC_METRICS = {
         CalcContribMetric("FOUL", cc_metric_fouls),
         CalcContribMetric("MY_OPR", cc_metric_my_opr),
     ],
-}
-
-SORT_BY_COLUMNS = {
-    "2022": ["RNK", "OPR", "CARGO", "HAP"],
-    "2020": ["PC", "FOUL", "OPR"],
-    "2019": ["FOUL", "OPR"],
 }
