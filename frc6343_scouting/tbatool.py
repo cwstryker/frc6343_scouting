@@ -1,6 +1,6 @@
 from . import __VERSION__
 from .cc_metrics import CC_METRICS
-from .cc_metrics import SORT_BY_COLUMNS
+from .season import SORT_BY_COLUMNS
 from .season import SPECIAL_REPORTS
 
 import argparse
