@@ -5,7 +5,7 @@ CalcContribMetric = namedtuple("CalcContribMetric", ["cc_name", "cc_func"])
 
 
 # 2019 Events
-# EVENT = "2019flwp"  # South Florida Regional
+# EVENT = "2019flwp"   # South Florida Regional
 # EVENT = "2019orwil"  # Wilsonville PNW
 #
 # 2020 Events
@@ -13,7 +13,8 @@ CalcContribMetric = namedtuple("CalcContribMetric", ["cc_name", "cc_func"])
 #
 # 2022 Events
 # EVENT = "2022orore"  # Clackamas Academy PNW
-# EVENT = "2022flwp"  # South Florida Regional
+# EVENT = "2022flwp"   # South Florida Regional
+# EVENT = "2022week0"  # Week 0 Event
 
 
 def cc_metric_my_opr(*, match_data, alliance):
@@ -62,7 +63,7 @@ CC_METRICS = {
 }
 
 SORT_BY_COLUMNS = {
-    "2022": ["BA_OPR", "CARGO", "HANG"],
-    "2020": ["PC", "FOUL", "MY_OPR"],
-    "2019": ["FOUL", "MY_OPR"],
+    "2022": ["RNK", "OPR", "CARGO", "HAP"],
+    "2020": ["PC", "FOUL", "OPR"],
+    "2019": ["FOUL", "OPR"],
 }

@@ -1,7 +1,7 @@
 from . import __VERSION__
 from .cc_metrics import CC_METRICS
 from .cc_metrics import SORT_BY_COLUMNS
-from .special import SPECIAL_REPORTS
+from .season import SPECIAL_REPORTS
 
 import argparse
 import os
@@ -16,7 +16,7 @@ from numpy.linalg import LinAlgError
 def get_opr_df(oprs_raw):
     teams = [int(team[3:]) for team, _ in sorted(list(oprs_raw["oprs"].items()))]
     opr_df = pd.DataFrame(index=teams)
-    opr_df["BA_OPR"] = [opr for _, opr in sorted(list(oprs_raw["oprs"].items()))]
+    opr_df["OPR"] = [opr for _, opr in sorted(list(oprs_raw["oprs"].items()))]
     return opr_df.sort_index()
 
 
@@ -27,7 +27,7 @@ def get_rankings_df(rankings_raw):
     ranking_df["L"] = [i["record"]["losses"] for i in rankings_raw["rankings"]]
     ranking_df["T"] = [i["record"]["ties"] for i in rankings_raw["rankings"]]
     # ranking_df["RP"] = [i["extra_stats"][0] for i in rankings_raw["rankings"]]
-    ranking_df["Rnk"] = [i["rank"] for i in rankings_raw["rankings"]]
+    ranking_df["RNK"] = [i["rank"] for i in rankings_raw["rankings"]]
     ranking_df["DQ"] = [i["dq"] for i in rankings_raw["rankings"]]
     return ranking_df.sort_index()
 
@@ -223,15 +223,15 @@ def main():
     my_opr_df = get_cc_metrics_df(matches, args.event, teams=df.index)
     df = pd.concat([df, my_opr_df], axis=1)
 
+    # Process special reports
+    for special in SPECIAL_REPORTS[args.event[:4]]:
+        df = pd.concat([df, special(tba, args.event)], axis=1)
+
     # Display the header
     process_and_print_header(event_info, matches, teams=df.index)
 
     # Display the results
     print_df(df, args.event[:4], args.team, matches, args.match)
-
-    # Display special reports
-    for special in SPECIAL_REPORTS[args.event[:4]]:
-        special(tba, args.event)
 
 
 if __name__ == "__main__":
