@@ -34,10 +34,21 @@ def cc_metric_2020_power_cell(*, match_data, alliance):
     return t_cells + a_cells
 
 
+def cc_metric_2022_cargo(*, match_data, alliance):
+    t_cargo = int(match_data["score_breakdown"][alliance]["teleopCargoPoints"])
+    a_cargo = int(match_data["score_breakdown"][alliance]["autoCargoPoints"])
+    return t_cargo + a_cargo
+
+
+def cc_metric_2022_hang(*, match_data, alliance):
+    return int(match_data["score_breakdown"][alliance]["endgamePoints"])
+
+
+
 CC_METRICS = {
     "2022": [
-        CalcContribMetric("FOUL", cc_metric_fouls),
-        CalcContribMetric("MY_OPR", cc_metric_my_opr),
+        CalcContribMetric("CARGO", cc_metric_2022_cargo),
+        CalcContribMetric("HANG", cc_metric_2022_hang),
     ],
     "2020": [
         CalcContribMetric("PC", cc_metric_2020_power_cell),
@@ -51,7 +62,7 @@ CC_METRICS = {
 }
 
 SORT_BY_COLUMNS = {
-    "2022": ["FOUL", "MY_OPR"],
+    "2022": ["BA_OPR", "CARGO", "HANG"],
     "2020": ["PC", "FOUL", "MY_OPR"],
     "2019": ["FOUL", "MY_OPR"],
 }

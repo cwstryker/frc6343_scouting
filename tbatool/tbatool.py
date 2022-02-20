@@ -1,6 +1,7 @@
 from . import __VERSION__
 from .cc_metrics import CC_METRICS
 from .cc_metrics import SORT_BY_COLUMNS
+from .special import SPECIAL_REPORTS
 
 import argparse
 import os
@@ -9,9 +10,11 @@ import tbapy
 import pandas as pd
 import numpy as np
 from numpy.linalg import linalg
+from numpy.linalg import LinAlgError
 
 
-def get_opr_df(oprs_raw, teams):
+def get_opr_df(oprs_raw):
+    teams = [int(team[3:]) for team, _ in sorted(list(oprs_raw["oprs"].items()))]
     opr_df = pd.DataFrame(index=teams)
     opr_df["BA_OPR"] = [opr for _, opr in sorted(list(oprs_raw["oprs"].items()))]
     return opr_df.sort_index()
@@ -23,7 +26,7 @@ def get_rankings_df(rankings_raw):
     ranking_df["W"] = [i["record"]["wins"] for i in rankings_raw["rankings"]]
     ranking_df["L"] = [i["record"]["losses"] for i in rankings_raw["rankings"]]
     ranking_df["T"] = [i["record"]["ties"] for i in rankings_raw["rankings"]]
-    ranking_df["RP"] = [i["extra_stats"][0] for i in rankings_raw["rankings"]]
+    # ranking_df["RP"] = [i["extra_stats"][0] for i in rankings_raw["rankings"]]
     ranking_df["Rnk"] = [i["rank"] for i in rankings_raw["rankings"]]
     ranking_df["DQ"] = [i["dq"] for i in rankings_raw["rankings"]]
     return ranking_df.sort_index()
@@ -73,7 +76,10 @@ def get_cc_metric(*, season, teams, matches, metric_name):
 
     # Solve for x
     if m_norm.ndim == 2:
-        return linalg.solve(m_norm, s_norm)
+        try:
+            return linalg.solve(m_norm, s_norm)
+        except LinAlgError:
+            print(f"Could not calculate {metric_name}")
 
 
 def get_cc_metrics_df(matches, event_id, teams):
@@ -96,7 +102,7 @@ def print_header(event_name, year, start_date, n_completed, n_total, n_teams):
     print()
 
 
-def process_and_print_header(event_info, teams, matches):
+def process_and_print_header(event_info, matches, teams):
     all_post_result_times = [
         i
         for _, i in sorted(
@@ -192,19 +198,16 @@ def main():
     # Create a TBA connection using my API key
     tba = tbapy.TBA(os.environ.get("TBA_READ_KEY"))
     event_info = tba.event(args.event)
-    # teams = [int(i["key"][3:]) for i in tba.event_teams(args.event, simple=True)]
     matches = tba.event_matches(args.event)
-    # pprint(matches)
 
     # Use pandas to organize team data
-    # df = pd.DataFrame(index=teams)
     df = pd.DataFrame()
 
     # Concatenate the Blue Alliance rankings data
     try:
         rankings = tba.event_rankings(args.event)
     except TypeError:
-        pass
+        print("No ranking data")
     else:
         df = pd.concat([df, get_rankings_df(rankings)], axis=1)
 
@@ -212,19 +215,23 @@ def main():
     try:
         oprs = tba.event_oprs(args.event)
     except TypeError:
-        pass
+        print("No OPR data")
     else:
-        df = pd.concat([df, get_opr_df(oprs, teams=df.index)], axis=1)
+        df = pd.concat([df, get_opr_df(oprs)], axis=1)
 
     # Concatenate the calculated contribution results
     my_opr_df = get_cc_metrics_df(matches, args.event, teams=df.index)
     df = pd.concat([df, my_opr_df], axis=1)
 
     # Display the header
-    process_and_print_header(event_info, teams=df.index, matches=matches)
+    process_and_print_header(event_info, matches, teams=df.index)
 
     # Display the results
     print_df(df, args.event[:4], args.team, matches, args.match)
+
+    # Display special reports
+    for special in SPECIAL_REPORTS[args.event[:4]]:
+        special(tba, args.event)
 
 
 if __name__ == "__main__":
