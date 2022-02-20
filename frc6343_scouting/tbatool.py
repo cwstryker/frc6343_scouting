@@ -169,10 +169,12 @@ def print_df(df, season, team, matches, match_number):
             "display.max_columns",
             None,
             "display.float_format",
-            "{:.2f}".format,
+            "{:.1f}".format,
         ):
 
-            print(f"Sorted by {sort_by} & Marked for Match {match_number}")
+            print(f"Sorted by {sort_by}", end="" if match_number else "\n")
+            if match_number:
+                print(f" & Marked for Match {match_number}")
             print(df)
             print()
     df.set_index(pd.Index(saved_index))
