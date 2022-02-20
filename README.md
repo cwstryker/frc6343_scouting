@@ -1,6 +1,6 @@
-# TBA Tool
+# FRC Team 6343 Scouting Tools
 
-Analyzing Blue Alliance match data during and after the event
+Tools to aid in FRC event scouting.
 
 <a href="https://www.python.org"><img alt="Python: 3.7+" src="https://img.shields.io/badge/Python-3.7+-Green.svg"></a>
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
