@@ -4,7 +4,6 @@ from .cc_metrics import SORT_BY_COLUMNS
 
 import argparse
 import os
-from pprint import pprint
 
 import tbapy
 import pandas as pd
@@ -18,7 +17,8 @@ def get_opr_df(oprs_raw, teams):
     return opr_df.sort_index()
 
 
-def get_rankings_df(rankings_raw, teams):
+def get_rankings_df(rankings_raw):
+    teams = [int(i["team_key"][3:]) for i in rankings_raw["rankings"]]
     ranking_df = pd.DataFrame(index=teams)
     ranking_df["W"] = [i["record"]["wins"] for i in rankings_raw["rankings"]]
     ranking_df["L"] = [i["record"]["losses"] for i in rankings_raw["rankings"]]
@@ -192,15 +192,13 @@ def main():
     # Create a TBA connection using my API key
     tba = tbapy.TBA(os.environ.get("TBA_READ_KEY"))
     event_info = tba.event(args.event)
-    teams = [int(i["key"][3:]) for i in tba.event_teams(args.event, simple=True)]
+    # teams = [int(i["key"][3:]) for i in tba.event_teams(args.event, simple=True)]
     matches = tba.event_matches(args.event)
     # pprint(matches)
 
-    # Display the header
-    process_and_print_header(event_info, teams, matches)
-
     # Use pandas to organize team data
-    df = pd.DataFrame(index=teams)
+    # df = pd.DataFrame(index=teams)
+    df = pd.DataFrame()
 
     # Concatenate the Blue Alliance rankings data
     try:
@@ -208,7 +206,7 @@ def main():
     except TypeError:
         pass
     else:
-        df = pd.concat([df, get_rankings_df(rankings, teams)], axis=1)
+        df = pd.concat([df, get_rankings_df(rankings)], axis=1)
 
     # Concatenate the Blue Alliance OPR data
     try:
@@ -216,11 +214,14 @@ def main():
     except TypeError:
         pass
     else:
-        df = pd.concat([df, get_opr_df(oprs, teams)], axis=1)
+        df = pd.concat([df, get_opr_df(oprs, teams=df.index)], axis=1)
 
     # Concatenate the calculated contribution results
-    my_opr_df = get_cc_metrics_df(matches, args.event, teams)
+    my_opr_df = get_cc_metrics_df(matches, args.event, teams=df.index)
     df = pd.concat([df, my_opr_df], axis=1)
+
+    # Display the header
+    process_and_print_header(event_info, teams=df.index, matches=matches)
 
     # Display the results
     print_df(df, args.event[:4], args.team, matches, args.match)
