@@ -47,8 +47,8 @@ def cc_metric_2022_hang(*, match_data, alliance):
 
 CC_METRICS = {
     "2022": [
-        CalcContribMetric("CARGO", cc_metric_2022_cargo),
-        CalcContribMetric("HANG", cc_metric_2022_hang),
+        CalcContribMetric("CRG", cc_metric_2022_cargo),
+        CalcContribMetric("HNG", cc_metric_2022_hang),
     ],
     "2020": [
         CalcContribMetric("PC", cc_metric_2020_power_cell),

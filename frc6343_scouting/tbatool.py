@@ -102,7 +102,19 @@ def print_header(event_name, year, start_date, n_completed, n_total, n_teams):
     print()
 
 
-def process_and_print_header(event_info, matches, teams):
+def find_match_alliances(matches, match_number):
+    result = [], []
+    if match_number:
+        for match in matches:
+            if match["comp_level"] == "qm" and match["match_number"] == match_number:
+                red = [int(i[3:]) for i in match["alliances"]["red"]["team_keys"]]
+                blue = [int(i[3:]) for i in match["alliances"]["blue"]["team_keys"]]
+                result = (red, blue)
+                break
+    return result
+
+
+def process_and_print_header(event_info, team, matches, teams):
     all_post_result_times = [
         i
         for _, i in sorted(
@@ -123,17 +135,14 @@ def process_and_print_header(event_info, matches, teams):
         len(teams),
     )
 
-
-def find_match_alliances(matches, match_number):
-    result = [], []
-    if match_number:
-        for match in matches:
-            if match["comp_level"] == "qm" and match["match_number"] == match_number:
-                red = [int(i[3:]) for i in match["alliances"]["red"]["team_keys"]]
-                blue = [int(i[3:]) for i in match["alliances"]["blue"]["team_keys"]]
-                result = (red, blue)
-                break
-    return result
+    if team:
+        print(f"Matches with Team {team}")
+        print("Match       Red Alliance       Blue Alliance")
+        for match_number in range(len(all_post_result_times)):
+            red, blue = find_match_alliances(matches, match_number+1)
+            if team in red or team in blue:
+                print(f"{match_number+1:5}   {red[0]:4}  {red[1]:4}  {red[2]:4}    {blue[0]:4}  {blue[1]:4}  {blue[2]:4}")
+        print()
 
 
 def mark_index(index, team, red, blue):
@@ -169,10 +178,12 @@ def print_df(df, season, team, matches, match_number):
             "display.max_columns",
             None,
             "display.float_format",
-            "{:.2f}".format,
+            "{:.1f}".format,
         ):
 
-            print(f"Sorted by {sort_by} & Marked for Match {match_number}")
+            print(f"Sorted by {sort_by}", end="" if match_number else "\n")
+            if match_number:
+                print(f" & Marked for Match {match_number}")
             print(df)
             print()
     df.set_index(pd.Index(saved_index))
@@ -228,7 +239,7 @@ def main():
         df = pd.concat([df, special(tba, args.event)], axis=1)
 
     # Display the header
-    process_and_print_header(event_info, matches, teams=df.index)
+    process_and_print_header(event_info, args.team, matches, teams=df.index)
 
     # Display the results
     print_df(df, args.event[:4], args.team, matches, args.match)
