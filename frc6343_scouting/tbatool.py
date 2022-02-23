@@ -189,34 +189,21 @@ def print_df(df, season, team, matches, match_number):
     df.set_index(pd.Index(saved_index))
 
 
-def main():
-
-    parser = argparse.ArgumentParser(
-        description="Blue Alliance Event Analysis", prog="TBA Tool"
-    )
-    parser.add_argument("event", help="ID string for an FRC event (i.e. '2022orore')")
-    parser.add_argument(
-        "-t", "--team", type=int, help="Team number to mark (i.e. home team)"
-    )
-    parser.add_argument(
-        "-m", "--match", type=int, help="Match number used to mark alliances"
-    )
-    parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {__VERSION__}"
-    )
-    args = parser.parse_args()
+def analyze_event(*, event, team, match, auth_key):
 
     # Create a TBA connection using my API key
-    tba = tbapy.TBA(os.environ.get("TBA_READ_KEY"))
-    event_info = tba.event(args.event)
-    matches = tba.event_matches(args.event)
+    tba = tbapy.TBA(auth_key)
+    if len(tba.session.headers["X-TBA-Auth-Key"]) == 0:
+        raise ValueError("TBA Auth Key is not set")
+    event_info = tba.event(event)
+    matches = tba.event_matches(event)
 
     # Use pandas to organize team data
     df = pd.DataFrame()
 
     # Concatenate the Blue Alliance rankings data
     try:
-        rankings = tba.event_rankings(args.event)
+        rankings = tba.event_rankings(event)
     except TypeError:
         print("No ranking data")
     else:
@@ -224,25 +211,48 @@ def main():
 
     # Concatenate the Blue Alliance OPR data
     try:
-        oprs = tba.event_oprs(args.event)
+        oprs = tba.event_oprs(event)
     except TypeError:
         print("No OPR data")
     else:
         df = pd.concat([df, get_opr_df(oprs)], axis=1)
 
     # Concatenate the calculated contribution results
-    my_opr_df = get_cc_metrics_df(matches, args.event, teams=df.index)
+    my_opr_df = get_cc_metrics_df(matches, event, teams=df.index)
     df = pd.concat([df, my_opr_df], axis=1)
 
     # Process special reports
-    for special in SPECIAL_REPORTS[args.event[:4]]:
-        df = pd.concat([df, special(tba, args.event)], axis=1)
+    for special in SPECIAL_REPORTS[event[:4]]:
+        df = pd.concat([df, special(tba, event)], axis=1)
 
     # Display the header
-    process_and_print_header(event_info, args.team, matches, teams=df.index)
+    process_and_print_header(event_info, team, matches, teams=df.index)
 
     # Display the results
-    print_df(df, args.event[:4], args.team, matches, args.match)
+    print_df(df, event[:4], team, matches, match)
+
+
+def main():
+
+    parser = argparse.ArgumentParser(
+        description="Blue Alliance Event Analysis", prog="TBA Tool"
+    )
+    parser.add_argument("event", default=None, help="ID string for an FRC event (i.e. '2022orore')")
+    parser.add_argument(
+        "-t", "--team", type=int, default=None, help="Team number to mark (i.e. home team)"
+    )
+    parser.add_argument(
+        "-m", "--match", type=int, default=None, help="Match number used to mark alliances"
+    )
+    parser.add_argument(
+        "--auth-key", action="store", default=None, help="Blue Alliance API read key"
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__VERSION__}"
+    )
+    args = parser.parse_args()
+    auth_key = args.auth_key if args.auth_key else os.environ.get("TBA_READ_KEY")
+    analyze_event(event=args.event, team=args.team, match=args.match, auth_key=auth_key)
 
 
 if __name__ == "__main__":
