@@ -4,19 +4,6 @@ from collections import namedtuple
 CalcContribMetric = namedtuple("CalcContribMetric", ["cc_name", "cc_func"])
 
 
-# 2019 Events
-# EVENT = "2019flwp"   # South Florida Regional
-# EVENT = "2019orwil"  # Wilsonville PNW
-#
-# 2020 Events
-# EVENT = "2020orore"  # Clackamas Academy PNW
-#
-# 2022 Events
-# EVENT = "2022orore"  # Clackamas Academy PNW
-# EVENT = "2022flwp"   # South Florida Regional
-# EVENT = "2022week0"  # Week 0 Event
-
-
 def cc_metric_my_opr(*, match_data, alliance):
     """Find the total score earned during the match"""
     return int(match_data["score_breakdown"][alliance]["totalPoints"])
