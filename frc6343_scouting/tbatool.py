@@ -77,20 +77,25 @@ def get_cc_metric(*, season, teams, matches, metric_name):
     # Solve for x
     if m_norm.ndim == 2:
         try:
-            return linalg.solve(m_norm, s_norm)
+            cc_scores = linalg.solve(m_norm, s_norm)
+            cc_rms_error = (sum(((np.array(m) @ cc_scores) - np.array(s)) ** 2) / len(s)) ** 0.5
         except LinAlgError:
             print(f"Could not calculate {metric_name}")
+        return cc_scores, cc_rms_error
 
 
 def get_cc_metrics_df(matches, event_id, teams):
     """Create a dataframe for the calculated contribution metrics"""
     season = event_id[:4]
     cc_df = pd.DataFrame(index=teams)
+    cc_errors = {}
     for metric, _ in CC_METRICS[season]:
-        cc_df[metric] = get_cc_metric(
+        scores, error = get_cc_metric(
             season=season, teams=teams, matches=matches, metric_name=metric
         )
-    return cc_df.sort_index()
+        cc_df[metric] = scores
+        cc_errors[metric] = error
+    return cc_df.sort_index(), cc_errors
 
 
 def print_header(event_name, year, start_date, n_completed, n_total, n_teams):
@@ -189,6 +194,11 @@ def print_df(df, season, team, matches, match_number):
     df.set_index(pd.Index(saved_index))
 
 
+def print_cc_errors(rms_errors):
+    for metric in rms_errors:
+        print(f"{metric} calculated contribution RMS error: {rms_errors[metric]:4.1f}")
+
+
 def analyze_event(*, event, team, match, auth_key):
 
     # Create a TBA connection using my API key
@@ -218,7 +228,7 @@ def analyze_event(*, event, team, match, auth_key):
         df = pd.concat([df, get_opr_df(oprs)], axis=1)
 
     # Concatenate the calculated contribution results
-    my_opr_df = get_cc_metrics_df(matches, event, teams=df.index)
+    my_opr_df, my_opr_errors = get_cc_metrics_df(matches, event, teams=df.index)
     df = pd.concat([df, my_opr_df], axis=1)
 
     # Process special reports
@@ -230,6 +240,9 @@ def analyze_event(*, event, team, match, auth_key):
 
     # Display the results
     print_df(df, event[:4], team, matches, match)
+
+    # Display cc_metric errors
+    print_cc_errors(my_opr_errors)
 
 
 def main():
