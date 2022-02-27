@@ -15,7 +15,7 @@ from frc6343_scouting.tbatool import analyze_event
 
 
 BA_AUTH_KEY = ""
-EVENT = "2022week0"
+EVENT = "2022orore"
 HOME_TEAM = 6343
 MATCH = 1
 

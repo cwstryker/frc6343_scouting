@@ -90,11 +90,13 @@ def get_cc_metrics_df(matches, event_id, teams):
     cc_df = pd.DataFrame(index=teams)
     cc_errors = {}
     for metric, _ in CC_METRICS[season]:
-        scores, error = get_cc_metric(
+        cc_metrics_results = get_cc_metric(
             season=season, teams=teams, matches=matches, metric_name=metric
         )
-        cc_df[metric] = scores
-        cc_errors[metric] = error
+        if cc_metrics_results:
+            scores, error = cc_metrics_results
+            cc_df[metric] = scores
+            cc_errors[metric] = error
     return cc_df.sort_index(), cc_errors
 
 
@@ -176,21 +178,25 @@ def print_df(df, season, team, matches, match_number):
         inplace=True,
     )
     for sort_by, ascending in SORT_BY_COLUMNS[season]:
-        df.sort_values(by=[sort_by], inplace=True, ascending=ascending)
-        with pd.option_context(
-            "display.max_rows",
-            None,
-            "display.max_columns",
-            None,
-            "display.float_format",
-            "{:.1f}".format,
-        ):
+        try:
+            df.sort_values(by=[sort_by], inplace=True, ascending=ascending)
+        except KeyError:
+            pass
+        else:
+            with pd.option_context(
+                "display.max_rows",
+                None,
+                "display.max_columns",
+                None,
+                "display.float_format",
+                "{:.1f}".format,
+            ):
 
-            print(f"Sorted by {sort_by}", end="" if match_number else "\n")
-            if match_number:
-                print(f" & Marked for Match {match_number}")
-            print(df)
-            print()
+                print(f"Sorted by {sort_by}", end="" if match_number else "\n")
+                if match_number:
+                    print(f" & Marked for Match {match_number}")
+                print(df)
+                print()
     df.set_index(pd.Index(saved_index))
 
 
@@ -228,8 +234,10 @@ def analyze_event(*, event, team, match, auth_key):
         df = pd.concat([df, get_opr_df(oprs)], axis=1)
 
     # Concatenate the calculated contribution results
-    my_opr_df, my_opr_errors = get_cc_metrics_df(matches, event, teams=df.index)
-    df = pd.concat([df, my_opr_df], axis=1)
+    cc_results = get_cc_metrics_df(matches, event, teams=df.index)
+    if cc_results:
+        my_opr_df, my_opr_errors = cc_results
+        df = pd.concat([df, my_opr_df], axis=1)
 
     # Process special reports
     for special in SPECIAL_REPORTS[event[:4]]:
