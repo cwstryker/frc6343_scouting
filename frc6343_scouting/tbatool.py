@@ -241,7 +241,9 @@ def analyze_event(*, event, team, match, auth_key):
 
     # Process special reports
     for special in SPECIAL_REPORTS[event[:4]]:
-        df = pd.concat([df, special(tba, event)], axis=1)
+        special_df = special(tba, event)
+        if len(special_df):
+            df = pd.concat([df, special_df], axis=1)
 
     # Display the header
     process_and_print_header(event_info, team, matches, teams=df.index)
