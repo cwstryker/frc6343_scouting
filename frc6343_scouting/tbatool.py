@@ -81,6 +81,8 @@ def get_cc_metric(*, season, teams, matches, metric_name):
             cc_rms_error = (sum(((np.array(m) @ cc_scores) - np.array(s)) ** 2) / len(s)) ** 0.5
         except LinAlgError:
             print(f"Could not calculate {metric_name}")
+            cc_scores = None
+            cc_rms_error = 0.0
         return cc_scores, cc_rms_error
 
 
@@ -221,7 +223,7 @@ def analyze_event(*, event, team, match, auth_key):
     try:
         rankings = tba.event_rankings(event)
     except TypeError:
-        print("No ranking data")
+        print("No Ranking Data")
     else:
         df = pd.concat([df, get_rankings_df(rankings)], axis=1)
 
@@ -229,7 +231,7 @@ def analyze_event(*, event, team, match, auth_key):
     try:
         oprs = tba.event_oprs(event)
     except TypeError:
-        print("No OPR data")
+        print("No OPR Data")
     else:
         df = pd.concat([df, get_opr_df(oprs)], axis=1)
 
