@@ -227,13 +227,13 @@ def analyze_event(*, event, team, match, auth_key):
     else:
         df = pd.concat([df, get_rankings_df(rankings)], axis=1)
 
-    # Concatenate the Blue Alliance OPR data
-    try:
-        oprs = tba.event_oprs(event)
-    except TypeError:
-        print("No OPR Data")
-    else:
-        df = pd.concat([df, get_opr_df(oprs)], axis=1)
+    # # Concatenate the Blue Alliance OPR data
+    # try:
+    #     oprs = tba.event_oprs(event)
+    # except TypeError:
+    #     print("No OPR Data")
+    # else:
+    #     df = pd.concat([df, get_opr_df(oprs)], axis=1)
 
     # Concatenate the calculated contribution results
     cc_results = get_cc_metrics_df(matches, event, teams=df.index)

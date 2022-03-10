@@ -36,6 +36,7 @@ CC_METRICS = {
     "2022": [
         CalcContribMetric("CRG", cc_metric_2022_cargo),
         CalcContribMetric("HNG", cc_metric_2022_hang),
+        CalcContribMetric("MY_OPR", cc_metric_my_opr),
     ],
     "2020": [
         CalcContribMetric("PC", cc_metric_2020_power_cell),
