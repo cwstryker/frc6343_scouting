@@ -15,7 +15,7 @@ def hang_history_2022(tba, event):
     matches = tba.event_matches(event)
 
     # for each alliance in a qualification match with a score breakdown
-    for match_data in matches:
+    for match_data in sorted(matches, key=lambda i: i["match_number"]):
         if match_data["comp_level"] == "qm" and match_data["score_breakdown"]:
             for alliance in ["red", "blue"]:
 
