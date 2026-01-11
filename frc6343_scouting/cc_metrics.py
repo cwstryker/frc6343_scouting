@@ -15,11 +15,20 @@ def cc_metric_fouls(*, match_data, alliance):
     return int(match_data["score_breakdown"][alliance]["foulPoints"])
 
 
-def cc_metric_2020_power_cell(*, match_data, alliance):
+def cc_metric_2020_power_cell_point(*, match_data, alliance):
     """Find the total cell points earned during the auto and teleop periods"""
     t_cells = int(match_data["score_breakdown"][alliance]["teleopCellPoints"])
     a_cells = int(match_data["score_breakdown"][alliance]["autoCellPoints"])
     return t_cells + a_cells
+
+
+def cc_metric_2020_power_cell(*, match_data, alliance):
+    """Find the total cell points earned during the auto and teleop periods"""
+    t_cells_outer = int(match_data["score_breakdown"][alliance]["teleopCellsOuter"])
+    t_cells_inner = int(match_data["score_breakdown"][alliance]["teleopCellsInner"])
+    a_cells_outer = int(match_data["score_breakdown"][alliance]["autoCellsOuter"])
+    a_cells_inner = int(match_data["score_breakdown"][alliance]["autoCellsInner"])
+    return t_cells_outer + t_cells_inner + a_cells_outer + a_cells_inner
 
 
 def cc_metric_2022_cargo(*, match_data, alliance):
@@ -38,7 +47,7 @@ CC_METRICS = {
         CalcContribMetric("HNG", cc_metric_2022_hang),
     ],
     "2020": [
-        CalcContribMetric("PC", cc_metric_2020_power_cell),
+        CalcContribMetric("POWER_CELL", cc_metric_2020_power_cell),
         CalcContribMetric("FOUL", cc_metric_fouls),
         CalcContribMetric("MY_OPR", cc_metric_my_opr),
     ],

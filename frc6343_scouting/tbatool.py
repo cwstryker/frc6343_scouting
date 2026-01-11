@@ -9,7 +9,7 @@ import os
 import tbapy
 import pandas as pd
 import numpy as np
-from numpy.linalg import linalg
+from numpy import linalg
 from numpy.linalg import LinAlgError
 
 

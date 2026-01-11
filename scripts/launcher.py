@@ -1,3 +1,5 @@
+from os import environ
+
 from frc6343_scouting.tbatool import analyze_event
 
 
@@ -14,8 +16,8 @@ from frc6343_scouting.tbatool import analyze_event
 # EVENT = "2022week0"  # Week 0 Event
 
 
-BA_AUTH_KEY = ""
-EVENT = "2022week0"
+BA_AUTH_KEY = environ.get("X-TBA-Auth-Key")
+EVENT = "2020wasno"
 HOME_TEAM = 6343
 MATCH = 1
 

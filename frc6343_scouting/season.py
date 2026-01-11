@@ -71,6 +71,6 @@ SPECIAL_REPORTS = {
 
 SORT_BY_COLUMNS = {
     "2022": [("RNK", True), ("OPR", False), ("TAP", False), ("CRG", False), ("HNG", False)],
-    "2020": [("PC", False), ("FOUL", True), ("OPR", False)],
+    "2020": [("POWER_CELL", False), ("FOUL", True), ("OPR", False)],
     "2019": [("FOUL", True), ("OPR", False)],
 }
